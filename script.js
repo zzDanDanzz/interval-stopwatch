@@ -8,7 +8,6 @@ let animationFrameId = null;
 // DOM Elements
 const displayEl = document.getElementById('display');
 const startBtn = document.getElementById('start-btn');
-const pauseBtn = document.getElementById('pause-btn');
 const resetBtn = document.getElementById('reset-btn');
 const intervalsBody = document.getElementById('intervals-body');
 
@@ -52,6 +51,11 @@ function startTimer() {
 
     isRunning = true;
     currentStartTime = Date.now();
+
+    // Update UI
+    startBtn.textContent = 'Pause';
+    startBtn.classList.add('pause');
+
     updateDisplay();
 }
 
@@ -76,6 +80,10 @@ function pauseTimer() {
     currentStartTime = null;
     cancelAnimationFrame(animationFrameId);
 
+    // Update UI
+    startBtn.textContent = 'Start';
+    startBtn.classList.remove('pause');
+
     // Update display one last time to ensure it shows the exact total
     displayEl.textContent = formatDuration(calculateTotalTime());
 
@@ -89,6 +97,11 @@ function resetTimer() {
     intervals = [];
     cancelAnimationFrame(animationFrameId);
     displayEl.textContent = "00:00:00";
+
+    // Update UI
+    startBtn.textContent = 'Start';
+    startBtn.classList.remove('pause');
+
     renderIntervals();
 }
 
@@ -152,6 +165,11 @@ function renderIntervals() {
 }
 
 // Event Listeners
-startBtn.addEventListener('click', startTimer);
-pauseBtn.addEventListener('click', pauseTimer);
+startBtn.addEventListener('click', () => {
+    if (isRunning) {
+        pauseTimer();
+    } else {
+        startTimer();
+    }
+});
 resetBtn.addEventListener('click', resetTimer);

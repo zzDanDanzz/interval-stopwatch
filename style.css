@@ -29,6 +29,24 @@ button {
     cursor: pointer;
 }
 
+#start-btn {
+    background-color: #4CAF50; /* Green */
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+#start-btn.pause {
+    background-color: #f44336; /* Red */
+}
+
+#reset-btn {
+    background-color: #e7e7e7;
+    color: black;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
 #intervals-table {
     width: 100%;
     border-collapse: collapse;
