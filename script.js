@@ -5,6 +5,38 @@ let isRunning = false;
 let currentStartTime = null;
 let animationFrameId = null;
 
+// Save state to localStorage
+function saveState() {
+    const state = {
+        intervals,
+        isRunning,
+        currentStartTime
+    };
+    localStorage.setItem('stopwatchState', JSON.stringify(state));
+}
+
+// Load state from localStorage
+function loadState() {
+    const savedState = localStorage.getItem('stopwatchState');
+    if (savedState) {
+        const state = JSON.parse(savedState);
+        intervals = state.intervals || [];
+        isRunning = state.isRunning || false;
+        currentStartTime = state.currentStartTime;
+
+        if (isRunning) {
+            startBtn.textContent = 'Pause';
+            startBtn.classList.add('pause');
+            updateDisplay(); // This starts the animation loop because updateDisplay calls requestAnimationFrame if isRunning is true
+        } else {
+            // Even if not running, update display to show total time
+            displayEl.textContent = formatDuration(calculateTotalTime());
+        }
+
+        renderIntervals();
+    }
+}
+
 // DOM Elements
 const displayEl = document.getElementById('display');
 const startBtn = document.getElementById('start-btn');
@@ -51,6 +83,7 @@ function startTimer() {
 
     isRunning = true;
     currentStartTime = Date.now();
+    saveState();
 
     // Update UI
     startBtn.textContent = 'Pause';
@@ -79,6 +112,7 @@ function pauseTimer() {
     isRunning = false;
     currentStartTime = null;
     cancelAnimationFrame(animationFrameId);
+    saveState();
 
     // Update UI
     startBtn.textContent = 'Start';
@@ -92,11 +126,20 @@ function pauseTimer() {
 
 // Reset Timer
 function resetTimer() {
+    if (intervals.length > 5) {
+        if (!confirm("Are you sure you want to reset?")) {
+            return;
+        }
+    }
+
     isRunning = false;
     currentStartTime = null;
     intervals = [];
     cancelAnimationFrame(animationFrameId);
     displayEl.textContent = "00:00:00";
+
+    // Clear localStorage
+    localStorage.removeItem('stopwatchState');
 
     // Update UI
     startBtn.textContent = 'Start';
@@ -108,6 +151,7 @@ function resetTimer() {
 // Delete Interval
 function deleteInterval(id) {
     intervals = intervals.filter(interval => interval.id !== id);
+    saveState();
     // Recalculate and update display (since total time depends on intervals)
     displayEl.textContent = formatDuration(calculateTotalTime());
     renderIntervals();
@@ -118,6 +162,7 @@ function updateComment(id, value) {
     const interval = intervals.find(i => i.id === id);
     if (interval) {
         interval.comment = value;
+        saveState();
     }
 }
 
@@ -173,3 +218,6 @@ startBtn.addEventListener('click', () => {
     }
 });
 resetBtn.addEventListener('click', resetTimer);
+
+// Initialize
+loadState();
