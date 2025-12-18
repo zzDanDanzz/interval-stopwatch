@@ -1,0 +1,51 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 50px;
+}
+
+#container {
+    width: 80%;
+    max-width: 800px;
+    text-align: center;
+}
+
+#display {
+    font-size: 48px;
+    margin-bottom: 20px;
+    font-weight: bold;
+}
+
+#controls {
+    margin-bottom: 30px;
+}
+
+button {
+    font-size: 18px;
+    padding: 10px 20px;
+    margin: 0 10px;
+    cursor: pointer;
+}
+
+#intervals-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+#intervals-table th, #intervals-table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+#intervals-table th {
+    background-color: #f2f2f2;
+}
+
+input[type="text"] {
+    width: 90%;
+    padding: 5px;
+}
