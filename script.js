@@ -4,6 +4,7 @@ let intervals = [];
 let isRunning = false;
 let currentStartTime = null;
 let animationFrameId = null;
+let editingIntervalId = null;
 
 // Save state to localStorage
 function saveState() {
@@ -59,6 +60,29 @@ function formatTimeOfDay(date) {
     return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit' });
 }
 
+// Convert timestamp to HH:MM:SS (24-hour) for input type="time"
+function toInputTime(timestamp) {
+    const d = new Date(timestamp);
+    const h = d.getHours().toString().padStart(2, '0');
+    const m = d.getMinutes().toString().padStart(2, '0');
+    const s = d.getSeconds().toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+// Update timestamp with new time string (HH:MM:SS)
+function fromInputTime(originalTimestamp, timeString) {
+    const parts = timeString.split(':');
+    const h = parseInt(parts[0], 10);
+    const m = parseInt(parts[1], 10);
+    const s = parts[2] ? parseInt(parts[2], 10) : 0;
+
+    const d = new Date(originalTimestamp);
+    d.setHours(h);
+    d.setMinutes(m);
+    d.setSeconds(s);
+    return d.getTime();
+}
+
 // Calculate total time
 function calculateTotalTime() {
     let total = intervals.reduce((acc, curr) => acc + curr.duration, 0);
@@ -89,6 +113,7 @@ function startTimer() {
     startBtn.textContent = 'Pause';
     startBtn.classList.add('pause');
 
+    renderIntervals(); // Re-render to disable edit buttons
     updateDisplay();
 }
 
@@ -135,6 +160,7 @@ function resetTimer() {
     isRunning = false;
     currentStartTime = null;
     intervals = [];
+    editingIntervalId = null;
     cancelAnimationFrame(animationFrameId);
     displayEl.textContent = "00:00:00";
 
@@ -151,6 +177,9 @@ function resetTimer() {
 // Delete Interval
 function deleteInterval(id) {
     intervals = intervals.filter(interval => interval.id !== id);
+    if (editingIntervalId === id) {
+        editingIntervalId = null;
+    }
     saveState();
     // Recalculate and update display (since total time depends on intervals)
     displayEl.textContent = formatDuration(calculateTotalTime());
@@ -166,27 +195,72 @@ function updateComment(id, value) {
     }
 }
 
+// Save Edit
+function saveEdit(id) {
+    const startInput = document.getElementById(`start-input-${id}`);
+    const endInput = document.getElementById(`end-input-${id}`);
+
+    if (startInput && endInput) {
+        const interval = intervals.find(i => i.id === id);
+        if (interval) {
+            const newStartTime = fromInputTime(interval.startTime, startInput.value);
+            const newEndTime = fromInputTime(interval.endTime, endInput.value);
+
+            interval.startTime = newStartTime;
+            interval.endTime = newEndTime;
+            interval.duration = newEndTime - newStartTime;
+
+            saveState();
+            displayEl.textContent = formatDuration(calculateTotalTime());
+        }
+    }
+
+    editingIntervalId = null;
+    renderIntervals();
+}
+
 // Render Intervals Table
 function renderIntervals() {
     intervalsBody.innerHTML = '';
 
-    // Iterate in order (oldest first) as requested implicitly by "list... one entry added... another entry added"
-    // Usually lists are top to bottom.
     intervals.forEach((interval, index) => {
         const row = document.createElement('tr');
+        const isEditing = interval.id === editingIntervalId;
 
+        // Start Time
         const startCell = document.createElement('td');
-        startCell.textContent = formatTimeOfDay(new Date(interval.startTime));
+        if (isEditing) {
+            const input = document.createElement('input');
+            input.type = 'time';
+            input.step = '1';
+            input.value = toInputTime(interval.startTime);
+            input.id = `start-input-${interval.id}`;
+            startCell.appendChild(input);
+        } else {
+            startCell.textContent = formatTimeOfDay(new Date(interval.startTime));
+        }
         row.appendChild(startCell);
 
+        // End Time
         const endCell = document.createElement('td');
-        endCell.textContent = formatTimeOfDay(new Date(interval.endTime));
+        if (isEditing) {
+            const input = document.createElement('input');
+            input.type = 'time';
+            input.step = '1';
+            input.value = toInputTime(interval.endTime);
+            input.id = `end-input-${interval.id}`;
+            endCell.appendChild(input);
+        } else {
+            endCell.textContent = formatTimeOfDay(new Date(interval.endTime));
+        }
         row.appendChild(endCell);
 
+        // Duration
         const durationCell = document.createElement('td');
         durationCell.textContent = formatDuration(interval.duration);
         row.appendChild(durationCell);
 
+        // Comment
         const commentCell = document.createElement('td');
         const input = document.createElement('input');
         input.type = 'text';
@@ -196,12 +270,37 @@ function renderIntervals() {
         commentCell.appendChild(input);
         row.appendChild(commentCell);
 
+        // Action
         const actionCell = document.createElement('td');
+        actionCell.style.display = 'flex';
+        actionCell.style.gap = '5px';
+        actionCell.style.justifyContent = 'center';
+
+        const editBtn = document.createElement('button');
+        if (isEditing) {
+            editBtn.textContent = 'Save';
+            editBtn.style.fontSize = '14px';
+            editBtn.style.padding = '5px 10px';
+            editBtn.addEventListener('click', () => saveEdit(interval.id));
+        } else {
+            editBtn.textContent = 'Edit';
+            editBtn.disabled = isRunning;
+            editBtn.style.fontSize = '14px';
+            editBtn.style.padding = '5px 10px';
+            editBtn.addEventListener('click', () => {
+                editingIntervalId = interval.id;
+                renderIntervals();
+            });
+        }
+        actionCell.appendChild(editBtn);
+
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.style.fontSize = '14px'; // Make it smaller than main controls
         deleteBtn.style.padding = '5px 10px';
         deleteBtn.addEventListener('click', () => deleteInterval(interval.id));
+        // Disable delete when editing? User didn't ask, but cleaner. I'll leave enabled as per prompt "when delete button is clickable".
+
         actionCell.appendChild(deleteBtn);
         row.appendChild(actionCell);
 
