@@ -31,6 +31,13 @@ function loadState() {
     } else {
       // Even if not running, update display to show total time
       displayEl.textContent = formatDuration(calculateTotalTime());
+      if (intervals.length > 0) {
+        intervalDisplayEl.textContent = formatDuration(
+          intervals[intervals.length - 1].duration
+        );
+      } else {
+        intervalDisplayEl.textContent = "00:00:00";
+      }
     }
 
     renderIntervals();
@@ -39,6 +46,7 @@ function loadState() {
 
 // DOM Elements
 const displayEl = document.getElementById("display");
+const intervalDisplayEl = document.getElementById("interval-display");
 const startBtn = document.getElementById("start-btn");
 const resetBtn = document.getElementById("reset-btn");
 const intervalsBody = document.getElementById("intervals-body");
@@ -99,7 +107,10 @@ function calculateTotalTime() {
 function updateDisplay() {
   const totalTime = calculateTotalTime();
   displayEl.textContent = formatDuration(totalTime);
+
   if (isRunning) {
+    const currentIntervalTime = Date.now() - currentStartTime;
+    intervalDisplayEl.textContent = formatDuration(currentIntervalTime);
     animationFrameId = requestAnimationFrame(updateDisplay);
   }
 }
@@ -115,6 +126,7 @@ function startTimer() {
   // Update UI
   startBtn.textContent = "Pause";
   startBtn.classList.add("pause");
+  intervalDisplayEl.textContent = "00:00:00";
 
   renderIntervals(); // Re-render to disable edit buttons
   updateDisplay();
@@ -148,6 +160,7 @@ function pauseTimer() {
 
   // Update display one last time to ensure it shows the exact total
   displayEl.textContent = formatDuration(calculateTotalTime());
+  intervalDisplayEl.textContent = formatDuration(duration);
 
   renderIntervals();
 }
@@ -166,6 +179,7 @@ function resetTimer() {
   editingIntervalId = null;
   cancelAnimationFrame(animationFrameId);
   displayEl.textContent = "00:00:00";
+  intervalDisplayEl.textContent = "00:00:00";
 
   // Clear localStorage
   localStorage.removeItem("stopwatchState");
